@@ -94,11 +94,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database configuration using dj_database_url and environment variable
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': '2060',
+        'HOST': 'localhost',
+        'PORT': '5433',
+    }
 }
 
 # Password validation
