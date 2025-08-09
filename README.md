@@ -30,9 +30,9 @@ DBMS/
 │   ├── public/
 │   └── ...
 │
-├── database_schema_v2.sql          # Component tables, indexes, triggers
+├── database_schema.sql             # Component tables, indexes, triggers (lean)
 ├── compatibility_functions.sql     # Compatibility rules (Postgres functions)
-├── sample_data_v2.sql              # Optional seed data
+├── sample_data.sql                 # Optional seed data (lean)
 └── README.md (this file)
 
 ---
@@ -93,14 +93,14 @@ python manage.py runserver
 
 ---
 
-## 🧱 Database v2 Setup (SQL-first components)
+## 🧱 Database Setup (SQL-first components)
 
 Apply schema and functions in psql:
 ```sql
-\i database_schema_v2.sql
+\i database_schema.sql
 \i compatibility_functions.sql
 -- optional seed data
-\i sample_data_v2.sql
+\i sample_data.sql
 ```
 
 What this gives you

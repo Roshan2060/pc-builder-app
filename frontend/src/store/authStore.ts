@@ -12,16 +12,21 @@ interface User {
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
+  authReady: boolean
+  initialized: boolean
   login: (email: string, password: string) => Promise<boolean>
   signup: (username: string, email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
   tryAutoLogin: () => Promise<void>
+  initAuth: () => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
+  authReady: false,
+  initialized: false,
 
   login: async (email, password) => {
     try {
@@ -30,10 +35,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
       })
       const { access, refresh, user } = res.data
-      
       localStorage.setItem("access", access)
       localStorage.setItem("refresh", refresh)
-
+      axios.defaults.headers.common["Authorization"] = `Bearer ${access}`
       set({ user, isAuthenticated: true })
       return true
     } catch (err) {
@@ -50,10 +54,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
       })
       const { access, refresh, user } = res.data
-
       localStorage.setItem("access", access)
       localStorage.setItem("refresh", refresh)
-
+      axios.defaults.headers.common["Authorization"] = `Bearer ${access}`
       set({ user, isAuthenticated: true })
       return true
     } catch (err) {
@@ -77,46 +80,66 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       localStorage.removeItem("access")
       localStorage.removeItem("refresh")
+      delete axios.defaults.headers.common["Authorization"]
       set({ user: null, isAuthenticated: false })
     }
   },
 
   fetchUser: async () => {
+    const access = localStorage.getItem("access")
+    if (access) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${access}`
+    }
     try {
-      const res = await axios.get(`${API_BASE}/me/`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access")}`,
-        },
-      })
-      
+      const res = await axios.get(`${API_BASE}/me/`)
       set({ user: res.data, isAuthenticated: true })
-      
-  } catch (err) {
-    console.error("Failed to fetch user:", err)
-    set({ user: null, isAuthenticated: false })
+    } catch (err) {
+      console.error("Failed to fetch user:", err)
+      set({ user: null, isAuthenticated: false })
+      throw err
     }
   },
 
   tryAutoLogin: async () => {
     const access = localStorage.getItem("access")
     const refresh = localStorage.getItem("refresh")
-    if (!access || !refresh) return
+    if (!access && !refresh) {
+      set({ authReady: true, isAuthenticated: false, user: null })
+      return
+    }
 
     try {
-      await useAuthStore.getState().fetchUser()
+      // Attempt to use current access token
+      await get().fetchUser()
     } catch {
+      // Try refresh
+      if (!refresh) {
+        localStorage.removeItem("access")
+        set({ user: null, isAuthenticated: false })
+        set({ authReady: true })
+        return
+      }
       try {
-        const res = await axios.post(`${API_BASE}/token/refresh/`, {
-          refresh,
-        })
+        const res = await axios.post(`${API_BASE}/token/refresh/`, { refresh })
         const newAccess = res.data.access
         localStorage.setItem("access", newAccess)
-        await useAuthStore.getState().fetchUser()
+        axios.defaults.headers.common["Authorization"] = `Bearer ${newAccess}`
+        await get().fetchUser()
       } catch (refreshError) {
         console.error("Auto login failed:", refreshError)
         localStorage.removeItem("access")
         localStorage.removeItem("refresh")
+        delete axios.defaults.headers.common["Authorization"]
+        set({ user: null, isAuthenticated: false })
       }
+    } finally {
+      set({ authReady: true })
     }
+  },
+
+  initAuth: async () => {
+    if (get().initialized) return
+    await get().tryAutoLogin()
+    set({ initialized: true })
   },
 }))

@@ -27,7 +27,7 @@ def get_vendors(request):
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id, name, website, logo_url, country, description, created_at, updated_at
+                SELECT id, name
                 FROM vendors
                 ORDER BY name
             """)
@@ -253,7 +253,7 @@ def get_cpus(request):
             query += " AND c.vendor_id = %s"
             params.append(int(vendor_id))
         
-        query += " ORDER BY c.performance_score DESC, c.price"
+        query += " ORDER BY c.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -333,7 +333,7 @@ def get_motherboards(request):
             query += " AND m.vendor_id = %s"
             params.append(int(vendor_id))
         
-        query += " ORDER BY m.performance_score DESC, m.price"
+        query += " ORDER BY m.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -372,9 +372,7 @@ def get_ram_modules(request):
             query += " AND r.ram_type = %s"
             params.append(ram_type)
         
-        if capacity:
-            query += " AND r.capacity = %s"
-            params.append(int(capacity))
+        # capacity removed in lean schema
         
         if min_speed:
             query += " AND r.speed >= %s"
@@ -396,7 +394,7 @@ def get_ram_modules(request):
             query += " AND r.vendor_id = %s"
             params.append(int(vendor_id))
         
-        query += " ORDER BY r.performance_score DESC, r.price"
+        query += " ORDER BY r.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -430,13 +428,7 @@ def get_gpus(request):
         """
         params = []
         
-        if min_memory:
-            query += " AND g.memory_size >= %s"
-            params.append(int(min_memory))
-        
-        if max_memory:
-            query += " AND g.memory_size <= %s"
-            params.append(int(max_memory))
+        # memory_size removed in lean schema
         
         if min_price:
             query += " AND g.price >= %s"
@@ -450,11 +442,9 @@ def get_gpus(request):
             query += " AND g.vendor_id = %s"
             params.append(int(vendor_id))
         
-        if ray_tracing:
-            query += " AND g.ray_tracing = %s"
-            params.append(ray_tracing.lower() == 'true')
+        # ray_tracing removed in lean schema
         
-        query += " ORDER BY g.performance_score DESC, g.price"
+        query += " ORDER BY g.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -497,13 +487,7 @@ def get_storage_devices(request):
             query += " AND s.interface = %s"
             params.append(interface)
         
-        if min_capacity:
-            query += " AND s.capacity >= %s"
-            params.append(int(min_capacity))
-        
-        if max_capacity:
-            query += " AND s.capacity <= %s"
-            params.append(int(max_capacity))
+        # capacity removed in lean schema
         
         if min_price:
             query += " AND s.price >= %s"
@@ -517,7 +501,7 @@ def get_storage_devices(request):
             query += " AND s.vendor_id = %s"
             params.append(int(vendor_id))
         
-        query += " ORDER BY s.performance_score DESC, s.price"
+        query += " ORDER BY s.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -560,13 +544,7 @@ def get_power_supplies(request):
             query += " AND p.wattage <= %s"
             params.append(int(max_wattage))
         
-        if efficiency_rating:
-            query += " AND p.efficiency_rating = %s"
-            params.append(efficiency_rating)
-        
-        if modular_type:
-            query += " AND p.modular_type = %s"
-            params.append(modular_type)
+        # efficiency_rating, modular_type removed in lean schema
         
         if min_price:
             query += " AND p.price >= %s"
@@ -643,7 +621,7 @@ def get_cases(request):
             query += " AND c.side_panel_type = %s"
             params.append(side_panel_type)
         
-        query += " ORDER BY c.airflow_score DESC, c.price"
+        query += " ORDER BY c.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -678,21 +656,13 @@ def get_cpu_coolers(request):
         """
         params = []
         
-        if cooler_type:
-            query += " AND cc.cooler_type = %s"
-            params.append(cooler_type)
+        # cooler_type removed in lean schema
         
         if socket_type:
             query += " AND %s = ANY(cc.socket_support)"
             params.append(socket_type)
         
-        if min_tdp:
-            query += " AND cc.tdp_rating >= %s"
-            params.append(int(min_tdp))
-        
-        if max_tdp:
-            query += " AND cc.tdp_rating <= %s"
-            params.append(int(max_tdp))
+        # tdp_rating removed in lean schema
         
         if min_price:
             query += " AND cc.price >= %s"
@@ -706,7 +676,7 @@ def get_cpu_coolers(request):
             query += " AND cc.vendor_id = %s"
             params.append(int(vendor_id))
         
-        query += " ORDER BY cc.performance_score DESC, cc.price"
+        query += " ORDER BY cc.price"
         
         with connection.cursor() as cursor:
             cursor.execute(query, params)
@@ -926,36 +896,36 @@ def search_components(request):
         with connection.cursor() as cursor:
             if component_type in ['all', 'cpu']:
                 cursor.execute("""
-                    SELECT 'cpu' as type, id, name, model, price, performance_score, socket_type
+                    SELECT 'cpu' as type, id, name, model, price, socket_type
                     FROM cpus 
                     WHERE (name ILIKE %s OR model ILIKE %s) AND is_active = TRUE
-                    ORDER BY performance_score DESC
+                    ORDER BY price
                     LIMIT 10
                 """, [search_term, search_term])
-                results['cpus'] = [dict(zip(['type', 'id', 'name', 'model', 'price', 'performance_score', 'socket_type'], row)) 
-                                 for row in cursor.fetchall()]
+                results['cpus'] = [dict(zip(['type', 'id', 'name', 'model', 'price', 'socket_type'], row)) 
+                                   for row in cursor.fetchall()]
             
             if component_type in ['all', 'motherboard']:
                 cursor.execute("""
-                    SELECT 'motherboard' as type, id, name, model, price, performance_score, socket_type, form_factor
+                    SELECT 'motherboard' as type, id, name, model, price, socket_type, form_factor
                     FROM motherboards 
                     WHERE (name ILIKE %s OR model ILIKE %s) AND is_active = TRUE
-                    ORDER BY performance_score DESC
+                    ORDER BY price
                     LIMIT 10
                 """, [search_term, search_term])
-                results['motherboards'] = [dict(zip(['type', 'id', 'name', 'model', 'price', 'performance_score', 'socket_type', 'form_factor'], row)) 
-                                         for row in cursor.fetchall()]
+                results['motherboards'] = [dict(zip(['type', 'id', 'name', 'model', 'price', 'socket_type', 'form_factor'], row)) 
+                                           for row in cursor.fetchall()]
             
             if component_type in ['all', 'gpu']:
                 cursor.execute("""
-                    SELECT 'gpu' as type, id, name, model, price, performance_score, memory_size, chipset
+                    SELECT 'gpu' as type, id, name, model, price
                     FROM gpus 
                     WHERE (name ILIKE %s OR model ILIKE %s) AND is_active = TRUE
-                    ORDER BY performance_score DESC
+                    ORDER BY price
                     LIMIT 10
                 """, [search_term, search_term])
-                results['gpus'] = [dict(zip(['type', 'id', 'name', 'model', 'price', 'performance_score', 'memory_size', 'chipset'], row)) 
-                                 for row in cursor.fetchall()]
+                results['gpus'] = [dict(zip(['type', 'id', 'name', 'model', 'price'], row)) 
+                                   for row in cursor.fetchall()]
 
         return Response(results)
     except Exception as e:

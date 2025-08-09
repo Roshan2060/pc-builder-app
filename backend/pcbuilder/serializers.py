@@ -1,56 +1,17 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import *
+from .models import User
 
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'bio', 'avatar', 'is_pro_builder']
+        fields = ['id', 'username', 'email', 'password']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        bio = validated_data.pop('bio', '')
-        avatar = validated_data.pop('avatar', None)
-        is_pro_builder = validated_data.pop('is_pro_builder', False)
-
         user = User.objects.create_user(**validated_data)
-        user.bio = bio
-        user.avatar = avatar
-        user.is_pro_builder = is_pro_builder
-        user.save()
         return user
     
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = '__all__'
-
-class VendorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vendor
-        fields = '__all__'
-
-class ComponentSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    vendor = VendorSerializer(read_only=True)
-    
-    class Meta:
-        model = Component
-        fields = '__all__'
-
-class BuildComponentSerializer(serializers.ModelSerializer):
-    component = ComponentSerializer()
-    
-    class Meta:
-        model = BuildComponent
-        fields = ['id', 'component', 'quantity', 'notes']
-
-class BuildSerializer(serializers.ModelSerializer):
-    components = BuildComponentSerializer(source='components.all', many=True)
-    
-    class Meta:
-        model = Build
-        fields = ['id', 'name', 'description', 'created', 'updated', 
-                 'is_public', 'total_price', 'components']
+## Lean API no longer uses ORM models for components; keep only UserSerializer
