@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Starting TatoBato backend..."
+echo "PC Builder...."
 
 echo "Running database migrations..."
 python manage.py migrate --no-input
@@ -12,4 +12,6 @@ echo "from django.contrib.auth import get_user_model; User = get_user_model(); U
 
 echo "Starting Gunicorn server..."
 echo "Server will be available at the assigned URL"
-gunicorn tatobato.wsgi --log-file -
+# ...existing code...
+gunicorn config.wsgi:application --bind 0.0.0.0:8000 --log-file -
+# ...existing code...
