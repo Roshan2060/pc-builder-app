@@ -297,7 +297,7 @@ const BuilderPage = () => {
                                       id: component.id,
                                       name: component.name,
                                       category: categoryId,
-                                      price: component.price,
+                                      price: component.price.toString(),
                                       model: component.model,
                                     });
                                     setSelectedCategory(null);
