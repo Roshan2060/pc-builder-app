@@ -153,7 +153,12 @@ LOGIN_REDIRECT_URL = '/api/v1/'
 # CORS settings
 
 CORS_ALLOW_ALL_ORIGINS = False  # safer default
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+
+cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = []
 
 # Security settings
 
