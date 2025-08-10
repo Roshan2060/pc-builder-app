@@ -10,3 +10,4 @@ dj-database-url
 gunicorn
 dj-database-url
 drf-yasg
+whitenoise
